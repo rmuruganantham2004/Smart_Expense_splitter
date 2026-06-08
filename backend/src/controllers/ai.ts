@@ -41,6 +41,18 @@ export async function parseExpense(request: FastifyRequest, reply: FastifyReply)
 
     const parsedResult = await parseExpenseText(text, knownMembers);
 
+    // If payer is not resolved, fallback to the logged-in user's name
+    if (!parsedResult.payer) {
+      parsedResult.payer = request.user.name;
+      // Ensure the default payer is in the participants list
+      const userExists = parsedResult.participants.some(
+        p => p.toLowerCase() === request.user.name.toLowerCase()
+      );
+      if (!userExists) {
+        parsedResult.participants.unshift(request.user.name);
+      }
+    }
+
     return reply.status(200).send({
       success: true,
       parsed: parsedResult,
